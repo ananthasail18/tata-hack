@@ -1,0 +1,38 @@
+{
+  "champion_version": "v1.0.0",
+  "models": [
+    {
+      "version": "v1.0.0",
+      "model_type": "XGBoost",
+      "artifact_path": "models\\XGBoost_v1.0.0.joblib",
+      "metrics": {
+        "test_rmse": 14.109,
+        "test_mae": 10.325,
+        "test_nasa": 269.35
+      },
+      "hyperparameters": {
+        "rul_cap": 125
+      },
+      "registered_at": "2026-11-01T11:01:03.308434+00:00",
+      "status": "CHAMPION"
+    },
+    {
+      "version": "v2.0.0",
+      "model_type": "xgboost",
+      "artifact_path": "models\\xgboost_v2.0.0.joblib",
+      "metrics": {
+        "rmse": 49.205,
+        "mae": 31.314,
+        "nasa_score": 179415297.89
+      },
+      "hyperparameters": {
+        "rul_cap": 125,
+        "n_estimators": 120,
+        "learning_rate": 0.05,
+        "total_engines": 105
+      },
+      "registered_at": "2026-11-01T11:02:44.678929+00:00",
+      "status": "CANDIDATE"
+    }
+  ]
+}

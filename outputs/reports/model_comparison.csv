@@ -1,0 +1,6 @@
+model_name,target,val_rmse,val_mae,test_rmse,test_mae,test_nasa_score,train_time_s
+XGBoost,Capped (125),51.023,32.56,14.109,10.325,269.35,0.8
+Random_Forest,Capped (125),51.371,32.8,14.374,10.475,304.98,10.16
+Linear_Ridge,Capped (125),52.744,35.383,18.217,14.523,533.1,0.02
+PyTorch_LSTM,Capped (125),50.396,32.226,19.683,14.942,729.67,53.65
+XGBoost,Uncapped,34.265,24.069,23.569,16.517,10294.26,1.5

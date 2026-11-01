@@ -1,0 +1,95 @@
+# NASA C-MAPSS FD001 Predictive Maintenance Configuration
+# Teliport Season 4, Case Study 1
+
+project:
+  name: "cmapss_predictive_maintenance"
+  dataset_subset: "FD001"
+  random_seed: 42
+
+data:
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  train_file: "train_FD001.txt"
+  test_file: "test_FD001.txt"
+  rul_file: "RUL_FD001.txt"
+  train_val_split_ratio: 0.8  # 80 engines train, 20 engines validation (split by unit)
+  
+columns:
+  index_cols: ["unit", "cycle"]
+  setting_cols: ["op_setting_1", "op_setting_2", "op_setting_3"]
+  # Active degrading sensors in FD001 (excluding flat sensors: s1, s5, s6, s10, s16, s18, s19)
+  active_sensors: [
+    "sensor_2", "sensor_3", "sensor_4", "sensor_7", "sensor_8", "sensor_9",
+    "sensor_11", "sensor_12", "sensor_13", "sensor_14", "sensor_15",
+    "sensor_17", "sensor_20", "sensor_21"
+  ]
+  invariant_sensors: [
+    "sensor_1", "sensor_5", "sensor_6", "sensor_10", "sensor_16", "sensor_18", "sensor_19"
+  ]
+
+features:
+  rolling_windows: [5, 10]
+  compute_diff: true
+  compute_trend: true
+  compute_baseline_delta: true
+  baseline_cycles: 5  # Initial cycles used to establish healthy baseline per engine
+
+models:
+  rul_cap: 125  # Piecewise linear degradation ceiling (evaluated vs uncapped)
+  lstm:
+    sequence_length: 30
+    hidden_dim: 64
+    num_layers: 2
+    dropout: 0.2
+    learning_rate: 0.001
+    epochs: 25
+    batch_size: 64
+  rf:
+    n_estimators: 100
+    max_depth: 12
+    random_state: 42
+  xgb:
+    n_estimators: 120
+    learning_rate: 0.05
+    max_depth: 5
+    random_state: 42
+
+anomaly:
+  contamination: 0.10
+  n_estimators: 100
+  random_state: 42
+
+triage:
+  # Demonstration thresholds
+  rules:
+    critical:
+      max_rul: 15
+      min_anomaly_score: 0.70
+      severity: "CRITICAL"
+      action: "Ground engine immediately for priority inspection and hot-section overhaul."
+    high:
+      max_rul: 40
+      min_anomaly_score: 0.55
+      severity: "HIGH"
+      action: "Prioritize maintenance within next scheduled flight rotation / 5 cycles."
+    medium:
+      max_rul: 80
+      min_anomaly_score: 0.40
+      severity: "MEDIUM"
+      action: "Schedule workshop boroscope inspection and monitor trendline closely."
+    low:
+      min_rul: 81
+      severity: "LOW"
+      action: "Routine continuous monitoring; engine operating within normal tolerances."
+
+database:
+  db_path: "data/work_orders.db"
+
+mlops:
+  experiment_name: "CMAPSS_FD001_Predictive_Maintenance"
+  tracking_uri: "sqlite:///mlflow.db"
+  models_dir: "models"
+  outputs_dir: "outputs"
+  acceptance_criteria:
+    max_test_rmse: 25.0
+    max_test_mae: 20.0
