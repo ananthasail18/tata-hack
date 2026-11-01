@@ -1,0 +1,5 @@
+Experiment,Num Features,Val RMSE,Val MAE,Test RMSE,Test MAE,NASA Score
+Baseline (14 Raw Sensors),14,19.41,13.66,17.94,12.68,944.69
+Exp 2 (+ Rolling Means 5 & 10),42,20.04,14.12,19.83,14.51,1350.49
+"Exp 3 (+ Std, Diff & Trend)",84,19.83,14.0,19.9,14.45,1274.74
+Exp 4 (All 107 Feats + Baseline Delta),98,12.54,8.8,14.49,10.61,287.19

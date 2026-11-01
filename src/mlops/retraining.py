@@ -97,26 +97,54 @@ def run_retraining_workflow(
 
     # Evaluate current champion on same validation set if exists
     champion_metrics = None
+    champ_predictor = None
     if champion_meta and os.path.exists(champion_meta["artifact_path"]):
         champ_predictor = RULPredictor.load(champion_meta["artifact_path"])
         y_champ_pred = champ_predictor.predict(val_df)
-        champion_metrics = compute_regression_metrics(y_val_true, y_val_pred)
+        champion_metrics = compute_regression_metrics(y_val_true, y_champ_pred)
         print(f"[Retraining] Current Champion Metrics: {champion_metrics}")
 
-    # Determine acceptance and promotion
+    # Determine acceptance and promotion using Multi-Criteria Gating
     is_accepted = False
     rejection_reasons = []
 
+    # 1. Absolute RMSE ceiling
     if candidate_metrics["rmse"] > acceptance_max_rmse:
-        rejection_reasons.append(f"Candidate RMSE {candidate_metrics['rmse']} exceeds ceiling {acceptance_max_rmse}")
+        rejection_reasons.append(
+            f"Candidate RMSE ({candidate_metrics['rmse']:.2f}) exceeds ceiling ({acceptance_max_rmse:.2f})"
+        )
 
+    # 2. Relative Champion Comparison (RMSE + NASA Asymmetric Score + MAE)
     if champion_metrics:
-        # Candidate must not degrade performance significantly (>5% margin)
-        if candidate_metrics["rmse"] > champion_metrics["rmse"] * 1.05:
-            rejection_reasons.append(f"Candidate RMSE ({candidate_metrics['rmse']}) is worse than Champion ({champion_metrics['rmse']})")
+        # Check RMSE (must be within or better than champion)
+        if candidate_metrics["rmse"] > champion_metrics["rmse"] * 1.02:
+            rejection_reasons.append(
+                f"Candidate RMSE ({candidate_metrics['rmse']:.2f}) regresses vs Champion ({champion_metrics['rmse']:.2f})"
+            )
+        # Check NASA Asymmetric Penalty (critical: cannot incur worse late-prediction penalties)
+        if candidate_metrics["nasa_score"] > champion_metrics["nasa_score"] * 1.05:
+            rejection_reasons.append(
+                f"Candidate NASA Score ({candidate_metrics['nasa_score']:.1f}) exceeds Champion ({champion_metrics['nasa_score']:.1f})"
+            )
+        # Check MAE
+        if candidate_metrics["mae"] > champion_metrics["mae"] * 1.05:
+            rejection_reasons.append(
+                f"Candidate MAE ({candidate_metrics['mae']:.2f}) exceeds Champion ({champion_metrics['mae']:.2f})"
+            )
+
+    # 3. Schema & Feature Compatibility Check
+    if champ_predictor:
+        cand_feats = candidate_predictor.pipeline.feature_names
+        champ_feats = champ_predictor.pipeline.feature_names
+        if cand_feats != champ_feats:
+            rejection_reasons.append(
+                f"Feature schema mismatch: Candidate has {len(cand_feats)} features, Champion has {len(champ_feats)}"
+            )
 
     if len(rejection_reasons) == 0 or force_promotion:
         is_accepted = True
+    else:
+        print(f"[Retraining] Promotion rejected. Reasons: {rejection_reasons}")
 
     # Version numbering
     prev_models = registry.list_models()

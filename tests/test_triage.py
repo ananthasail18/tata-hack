@@ -44,6 +44,21 @@ def test_triage_nominal_operation():
     assert res["severity"] == "LOW"
     assert res["work_order_required"] is False
 
+def test_triage_high_rul_sensor_anomaly():
+    """High anomaly with high RUL must flag instrumentation audit rather than blade overhaul."""
+    agent = TriageAgent()
+    res = agent.evaluate(
+        engine_id=5,
+        predicted_rul=110.0,
+        anomaly_score=0.82,
+        anomaly_status="ANOMALY",
+        latest_sensors={"sensor_4": 1404.0}
+    )
+    assert res["severity"] == "CRITICAL"
+    assert res["work_order_required"] is True
+    assert "sensor harness" in res["recommended_action"].lower()
+    assert "instrumentation fault" in res["reason"].lower()
+
 def test_triage_invalid_rul_handling():
     agent = TriageAgent()
     res = agent.evaluate(

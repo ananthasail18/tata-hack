@@ -75,16 +75,35 @@ class TriageAgent:
         if s7_val is not None and s7_val <= 551.5:
             sensor_alerts.append(f"Depressed HPC total discharge pressure P30 ({s7_val:.1f} psia <= 551.5)")
 
-        # Decision Tree logic combining RUL and Anomaly score
-        if predicted_rul <= self.critical_rul or anomaly_score >= self.critical_anomaly:
+        # Decoupled Decision Logic combining RUL and Anomaly Score
+        # Case A: Imminent Physical End-of-Life (True Degradation Failure)
+        if predicted_rul <= self.critical_rul:
             severity = "CRITICAL"
             action = "Ground engine immediately for priority inspection and hot-section overhaul."
-            if predicted_rul <= self.critical_rul:
-                reasons.append(f"Critical Remaining Useful Life: {predicted_rul:.1f} cycles remaining (<= {self.critical_rul}).")
-            if anomaly_score >= self.critical_anomaly:
-                reasons.append(f"Extreme sensor anomaly score: {anomaly_score:.2f} (>= {self.critical_anomaly}).")
+            reasons.append(f"Critical Remaining Useful Life: {predicted_rul:.1f} cycles remaining (<= {self.critical_rul}).")
+            if anomaly_score >= self.high_anomaly:
+                reasons.append(f"Corroborated by high anomaly score: {anomaly_score:.2f}.")
             work_order_required = True
 
+        # Case B: Sensor / Instrumentation Anomaly (High Anomaly Score but High RUL)
+        elif anomaly_score >= self.critical_anomaly and predicted_rul > self.medium_rul:
+            severity = "CRITICAL"
+            action = "Ground engine for urgent sensor harness and instrumentation audit. Statistically anomalous telemetry detected despite high RUL forecast."
+            reasons.append(
+                f"Statistical telemetry anomaly detected (anomaly score {anomaly_score:.2f} >= {self.critical_anomaly}) "
+                f"while mechanical RUL forecast remains substantial ({predicted_rul:.1f} cycles > {self.medium_rul}). "
+                f"Indicates probable instrumentation fault, transducer drift, or auxiliary subsystem irregularity rather than core HPC blade wear."
+            )
+            work_order_required = True
+
+        # Case C: Extreme Anomaly with Moderate RUL
+        elif anomaly_score >= self.critical_anomaly:
+            severity = "CRITICAL"
+            action = "Ground engine for comprehensive mechanical and instrumentation diagnostics."
+            reasons.append(f"Extreme sensor anomaly score: {anomaly_score:.2f} with remaining life {predicted_rul:.1f} cycles.")
+            work_order_required = True
+
+        # Case D: High Degradation Window (15 < RUL <= 40)
         elif predicted_rul <= self.high_rul or anomaly_score >= self.high_anomaly:
             severity = "HIGH"
             action = "Prioritize maintenance within next scheduled flight rotation / 5 cycles."
@@ -94,6 +113,7 @@ class TriageAgent:
                 reasons.append(f"Elevated anomaly score: {anomaly_score:.2f} (>= {self.high_anomaly}).")
             work_order_required = True
 
+        # Case E: Emerging Degradation Window (40 < RUL <= 80)
         elif predicted_rul <= self.medium_rul or anomaly_score >= self.medium_anomaly:
             severity = "MEDIUM"
             action = "Schedule workshop boroscope inspection and monitor trendline closely."
@@ -103,6 +123,7 @@ class TriageAgent:
                 reasons.append(f"Moderate telemetry irregularity: anomaly score {anomaly_score:.2f}.")
             work_order_required = True
 
+        # Case F: Nominal Healthy Cruise
         else:
             severity = "LOW"
             action = "Routine continuous monitoring; engine operating within nominal design envelope."
