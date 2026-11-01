@@ -287,16 +287,16 @@ elif page == "3. Sensor Analysis & Physics":
 
     with c_c2:
         st.subheader("Physical Degradation Signatures")
-        st.markdown("""
-        * **Temperatures ($T_{50}, T_{30}, T_{24}$)**: **DRIFT UP ($\uparrow$)**  
+        st.markdown(r"""
+        * **Temperatures ($T_{50}, T_{30}, T_{24}$)**: **DRIFT UP (↑)**  
           Compensating fuel flow injects more thermal energy into combustor and turbine stages to maintain target sea-level thrust.
-        * **Total Pressure ($P_{30}$)**: **DRIFTS DOWN ($\downarrow$)**  
+        * **Total Pressure ($P_{30}$)**: **DRIFTS DOWN (↓)**  
           Worn HPC blades fail to generate required dynamic compression ratio.
-        * **Static Pressure ($Ps_{30}$)**: **DRIFTS UP ($\uparrow$)**  
+        * **Static Pressure ($Ps_{30}$)**: **DRIFTS UP (↑)**  
           Core flow restriction lowers axial velocity, converting dynamic pressure into static backpressure.
-        * **Bypass Ratio ($BPR$)**: **DRIFTS UP ($\uparrow$)**  
+        * **Bypass Ratio ($BPR$)**: **DRIFTS UP (↑)**  
           Core swallow capacity is restricted, causing fan air to divert around the core into bypass.
-        * **Coolant Bleed ($W_{31}, W_{32}$)**: **DRIFTS DOWN ($\downarrow$)**  
+        * **Coolant Bleed ($W_{31}, W_{32}$)**: **DRIFTS DOWN (↓)**  
           Reduced core pressure gradient starves turbine cooling air passages.
         """)
 
