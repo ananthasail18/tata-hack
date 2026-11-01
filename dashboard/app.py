@@ -87,7 +87,10 @@ def get_cached_inference():
     _, test_df, _ = get_cached_raw_data()
     return run_fleet_inference(test_df)
 
-train_raw, test_raw, test_ruls = get_cached_raw_data()
+with st.spinner("Initializing telemetry and running fleet inference..."):
+    train_raw, test_raw, test_ruls = get_cached_raw_data()
+    inference_res = get_cached_inference()
+
 wo_mgr = WorkOrderManager()
 registry = ModelRegistry()
 champion_meta = registry.get_champion()
@@ -109,8 +112,6 @@ page = st.sidebar.radio(
         "5. MLOps & Monitoring"
     ]
 )
-
-inference_res = get_cached_inference()
 fleet_df = inference_res["fleet_summary_df"]
 annotated_df = inference_res["annotated_cycles_df"]
 
